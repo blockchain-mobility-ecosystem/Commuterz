@@ -106,6 +106,7 @@ contract Commuterz {
     function driverAcceptRequest( bytes32 rideId ) {
     
         Ride ride = rides[rideId];
+        if( ride.rider == address(0) ) throw; // no booking
         if( ride.driver != address(0) ) throw;
         ride.driver = msg.sender;
 

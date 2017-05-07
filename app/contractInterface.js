@@ -1,4 +1,3 @@
-var sleep = require('sleep');
 var BigNumber = require('bignumber.js');
 var Tx = require('ethereumjs-tx');
 var Web3 = require('web3');
