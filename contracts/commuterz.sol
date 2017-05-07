@@ -1,6 +1,7 @@
 pragma solidity ^0.4.8;
 
 import "./token.sol";
+import "./commuterzlottery.sol";
 
 contract Commuterz {
     struct User {
@@ -29,7 +30,8 @@ contract Commuterz {
     mapping(address=>User) users;
     mapping(bytes32=>Ride) rides;
     
-    CommuterzToken public token;
+    CommuterzToken public   token;
+    CommuterzLottery public lottery;
     
     address owner;
     
@@ -45,11 +47,20 @@ contract Commuterz {
     event Dispute( address user, bytes32 rideId );
     event EndRide( bytes32 rideId, uint timestamp );
     event Rate( address user, bytes32 rideId, uint rating );
-    event ResolveDispute( bytes32 rideId, bool riderIsRight );    
+    event ResolveDispute( bytes32 rideId, bool riderIsRight );
+    event CreateNewLottery( address lottery, uint time );    
+    event DoLottery( address winner, address lottery, uint time );
+        
+    function createNewLottery() internal {
+        lottery = new CommuterzLottery(token);
+        CreateNewLottery( lottery, now );        
+    }        
         
     function Commuterz() {
         token = new CommuterzToken();
         owner = msg.sender;
+        
+        createNewLottery();
         
         maxNumUsers = token.balanceOf(this) / TOKENS_PER_USER;
     }
@@ -193,5 +204,17 @@ contract Commuterz {
         ride.rideEnded = true;
  
         ResolveDispute( rideId, riderIsRight );       
+    }
+    
+    function doLottery( ) {
+        if( msg.sender != owner ) throw;
+        
+        // this is not secure. change it later to blockhash of some future block
+        address winner = lottery.chooseWinner(uint(sha3(now)));
+        lottery.setWinner(winner);
+        
+        DoLottery( winner, lottery, now );
+        
+        createNewLottery();            
     }
 }
