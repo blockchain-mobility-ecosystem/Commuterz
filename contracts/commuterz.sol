@@ -143,9 +143,10 @@ contract Commuterz {
         if( ride.dispute ) throw;
         if( ride.rideEnded ) throw;
         
-        // else move money to driver
-        // * 2 factor because of collateral        
-        token.transfer(msg.sender, ride.rideCost * 2 );
+        // else move collateral to driver and payment to lottery        
+        token.transfer(msg.sender, ride.rideCost );
+        token.transfer(lottery, ride.rideCost );
+        
         
         ride.rideEnded = true;
         
