@@ -20,18 +20,21 @@ contract Commuterz {
         uint rideCost;
         
         bool rideEnded;
-        bool dispute;        
+        bool dispute;
+        
+        bool driverRated;
+        bool riderRated;        
     }
     
     mapping(address=>User) users;
     mapping(bytes32=>Ride) rides;
     
-    CommuterzToken token;
+    CommuterzToken public token;
     
     address owner;
     
-    uint numUsers;
-    uint maxNumUsers;
+    uint public numUsers;
+    uint public maxNumUsers;
     
     uint TOKENS_PER_USER = 50;
 
@@ -143,14 +146,27 @@ contract Commuterz {
     
     function rate( bytes32 rideId, uint rating ) {
         Ride ride = rides[rideId];
+         
+        if( (! ride.rideEnded) && (! ride.dispute ) ) throw;
+
+        address otherGuy;
+                
+        if( msg.sender == ride.rider ) {
+            if( ride.riderRated )  throw;
+            ride.riderRated = true;
+            
+            otherGuy = ride.driver;
+        }
+        else if( msg.sender == ride.driver ) {
+            if( ride.driverRated ) throw;
+            ride.driverRated = true;
+            
+            otherGuy = ride.rider;
+        }
+        else throw;
         
-        if( (! ride.rideEnded) || (! ride.dispute ) ) throw;
-        if( ride.rider != msg.sender || ride.driver != msg.sender ) throw;
         if( rating > 5 ) throw;
         
-        address otherGuy;
-        if( msg.sender != ride.rider ) otherGuy = ride.rider;
-        else otherGuy = ride.driver;
         
         users[otherGuy].numRatedRides++;
         users[otherGuy].reputation += rating;

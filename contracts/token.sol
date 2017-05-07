@@ -180,7 +180,7 @@ contract CommuterzToken is StandardToken {
   uint public decimals = 1;
   uint public INITIAL_SUPPLY = 1000000000;
   
-  function SimpleToken() {
+  function CommuterzToken() {
     totalSupply = INITIAL_SUPPLY;
     balances[msg.sender] = INITIAL_SUPPLY;
   }
