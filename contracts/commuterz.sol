@@ -20,9 +20,7 @@ contract Commuterz {
         uint rideCost;
         
         bool rideEnded;
-        bool dispute;
-        
-        
+        bool dispute;        
     }
     
     mapping(address=>User) users;
@@ -36,7 +34,16 @@ contract Commuterz {
     uint maxNumUsers;
     
     uint TOKENS_PER_USER = 50;
-    
+
+    event Register( address user, bytes32 IPFSHash );
+    event PassangerRideRequest( address rider, bytes32 rideId, uint cost, uint timestamp ); 
+    event DriverAcceptRequest( address driver, bytes32 rideId );
+    event UpdateNumRides( address user, bool withDispute );
+    event Dispute( address user, bytes32 rideId );
+    event EndRide( bytes32 rideId, uint timestamp );
+    event Rate( address user, bytes32 rideId, uint rating );
+    event ResolveDispute( bytes32 rideId, bool riderIsRight );    
+        
     function Commuterz() {
         token = new CommuterzToken();
         owner = msg.sender;
@@ -55,6 +62,8 @@ contract Commuterz {
         
         token.transfer(msg.sender, TOKENS_PER_USER);
         numUsers++;
+        
+        Register( msg.sender, userData );
     }
     
     function getRideId( address sender ) constant returns(bytes32) {
@@ -75,6 +84,9 @@ contract Commuterz {
         // charge for ride
         if( token.allowance(msg.sender,this) < rideCost ) throw;
         token.transferFrom(msg.sender, this, rideCost);
+        
+        
+        PassangerRideRequest( msg.sender, rideId, rideCost, now );        
     }
     
     function driverAcceptRequest( bytes32 rideId ) {
@@ -86,11 +98,15 @@ contract Commuterz {
         // put collateral
         if( token.allowance(msg.sender,this) < ride.rideCost ) throw;        
         token.transferFrom(msg.sender, this, ride.rideCost);
+        
+        DriverAcceptRequest( msg.sender, rideId );        
     }
  
     function updateNumRides( address user, bool withDistpute ) internal {
         users[user].numRides++;
         if( withDistpute ) users[user].numDisputes++;
+        
+        UpdateNumRides( user, withDistpute );
     }
     
     function dispute( bytes32 rideId ) {
@@ -101,7 +117,9 @@ contract Commuterz {
         ride.dispute = true;
         
         updateNumRides( ride.rider, true );
-        updateNumRides( ride.driver, true );        
+        updateNumRides( ride.driver, true );
+        
+        Dispute( msg.sender, rideId );         
     }
     
     function endRide( bytes32 rideId ) {
@@ -119,6 +137,8 @@ contract Commuterz {
         
         updateNumRides( ride.rider, false );
         updateNumRides( ride.driver, false );
+        
+        EndRide( rideId, now );
     }
     
     function rate( bytes32 rideId, uint rating ) {
@@ -134,6 +154,8 @@ contract Commuterz {
         
         users[otherGuy].numRatedRides++;
         users[otherGuy].reputation += rating;
+        
+        Rate( msg.sender, rideId, rating );
     }
     
     function resolveDispute( bytes32 rideId, bool riderIsRight ) {
@@ -153,6 +175,7 @@ contract Commuterz {
         token.transfer(to, ride.rideCost * 2 );
         
         ride.rideEnded = true;
-        
+ 
+        ResolveDispute( rideId, riderIsRight );       
     }
 }
