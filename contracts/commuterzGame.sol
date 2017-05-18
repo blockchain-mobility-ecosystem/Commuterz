@@ -2,7 +2,7 @@ pragma solidity ^0.4.8;
 
 import "./token.sol";
 
-contract CommuterzLottery {
+contract CommuterzGame {
         
     address public owner;
     address public winner;
@@ -18,7 +18,7 @@ contract CommuterzLottery {
     Ticket[] tickets;
     uint   public totalAmount;
     
-    function CommuterzLottery( CommuterzToken _token ) {
+    function CommuterzGame( CommuterzToken _token ) {
         owner = msg.sender;
         token = _token;
     }

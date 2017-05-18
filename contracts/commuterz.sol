@@ -1,11 +1,11 @@
 pragma solidity ^0.4.8;
 
 import "./token.sol";
-import "./commuterzlottery.sol";
+import "./commuterzGame.sol";
 
 contract Commuterz {
     struct User {
-        bytes32 IPFSDataHash;
+        string  IPFSDataLink;
         uint    nonce;
         uint    reputation;
         
@@ -31,16 +31,16 @@ contract Commuterz {
     mapping(bytes32=>Ride) rides;
     
     CommuterzToken public   token;
-    CommuterzLottery public lottery;
+    CommuterzGame public game;
     
     address owner;
     
     uint public numUsers;
     uint public maxNumUsers;
     
-    uint TOKENS_PER_USER = 50;
+    uint TOKENS_PER_USER = 200;
 
-    event Register( address user, bytes32 IPFSHash );
+    event Register( address user, string IPFSLink );
     event PassangerRideRequest( address rider, bytes32 rideId, uint cost, uint timestamp ); 
     event DriverAcceptRequest( address driver, bytes32 rideId );
     event UpdateNumRides( address user, bool withDispute );
@@ -48,30 +48,31 @@ contract Commuterz {
     event EndRide( bytes32 rideId, uint timestamp );
     event Rate( address user, bytes32 rideId, uint rating );
     event ResolveDispute( bytes32 rideId, bool riderIsRight );
-    event CreateNewLottery( address lottery, uint time );    
-    event DoLottery( address winner, address lottery, uint time );
+    event CreateNewGame( address game, uint time );    
+    event DoGame( address winner, address game, uint time );
         
-    function createNewLottery() internal {
-        lottery = new CommuterzLottery(token);
-        CreateNewLottery( lottery, now );        
+    function createNewGame() internal {
+        game = new CommuterzGame(token);
+        token.transfer(game, 10000);
+        CreateNewGame( game, now );        
     }        
         
     function Commuterz() {
         token = new CommuterzToken();
         owner = msg.sender;
         
-        createNewLottery();
+        createNewGame();
         
         maxNumUsers = token.balanceOf(this) / TOKENS_PER_USER;
     }
     
-    function register( bytes32 userData ) {
+    function register( string userData ) {
         // user already registered
         if( users[msg.sender].nonce != 0 ) throw;
         
         if( numUsers >= maxNumUsers ) throw;
         
-        users[msg.sender].IPFSDataHash = userData;
+        users[msg.sender].IPFSDataLink = userData;
         users[msg.sender].nonce++;
         
         token.transfer(msg.sender, TOKENS_PER_USER);
@@ -144,9 +145,10 @@ contract Commuterz {
         if( ride.dispute ) throw;
         if( ride.rideEnded ) throw;
         
-        // else move collateral to driver and payment to lottery        
+        // else move collateral to driver and split payment between game and driver        
         token.transfer(msg.sender, ride.rideCost );
-        token.transfer(lottery, ride.rideCost );
+        token.transfer(game, 0 );
+        token.transfer(ride.driver, ride.rideCost );        
         
         
         ride.rideEnded = true;
@@ -208,15 +210,39 @@ contract Commuterz {
         ResolveDispute( rideId, riderIsRight );       
     }
     
-    function doLottery( ) {
+    function doGame( ) {
         if( msg.sender != owner ) throw;
         
         // this is not secure. change it later to blockhash of some future block
-        address winner = lottery.chooseWinner(uint(sha3(now)));
-        lottery.setWinner(winner);
+        address winner = game.chooseWinner(uint(sha3(now)));
+        game.setWinner(winner);
         
-        DoLottery( winner, lottery, now );
+        DoGame( winner, game, now );
         
-        createNewLottery();            
+        createNewGame();            
     }
+
+    ////////////////////////////////////////////////////////////////////////////
+    // status functions                                                       //
+    ////////////////////////////////////////////////////////////////////////////
+ 
+    function getUserIPFSLink( address sender ) constant returns(string){
+        return users[sender].IPFSDataLink;
+    }
+
+    function getUserReputation( address sender ) constant returns(uint){
+        return users[sender].reputation;
+    }
+
+    function getUserNumRides( address sender ) constant returns(uint){
+        return users[sender].numRides;
+    }
+
+    function getUserNumDisputes( address sender ) constant returns(uint){
+        return users[sender].numDisputes;
+    }
+
+    function getUserNumRatedRides( address sender ) constant returns(uint){
+        return users[sender].numRatedRides;
+    }    
 }
