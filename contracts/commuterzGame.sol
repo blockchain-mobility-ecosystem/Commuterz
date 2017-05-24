@@ -28,13 +28,10 @@ contract CommuterzGame {
 
         totalAmount += amount;
         
-        Ticket memory ticket;
-        
-        ticket.user = user;
-        ticket.amount = amount;
-        ticket.sumTicketsAmounts = totalAmount;
-        
-        tickets.push(ticket);
+        tickets.push(Ticket({
+                user: user, 
+                amount: amount, 
+                sumTicketsAmounts: totalAmount}));
     }
     
     function chooseWinner( uint seed ) constant returns(address) {
