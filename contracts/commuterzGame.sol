@@ -33,6 +33,8 @@ contract CommuterzGame {
         ticket.user = user;
         ticket.amount = amount;
         ticket.sumTicketsAmounts = totalAmount;
+        
+        tickets.push(ticket);
     }
     
     function chooseWinner( uint seed ) constant returns(address) {
